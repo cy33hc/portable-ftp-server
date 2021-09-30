@@ -17,11 +17,15 @@
 package org.erc.pftps.services;
 
 import org.apache.ftpserver.ConnectionConfigFactory;
+import org.apache.ftpserver.DataConnectionConfigurationFactory;
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
+import org.apache.ftpserver.command.CommandFactoryFactory;
 import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
+import org.erc.pftps.commands.DZPC;
+import org.erc.pftps.commands.UNZP;
 
 /**
  * The Class FTPServer.
@@ -90,8 +94,8 @@ public class FTPServer {
 		stop();
 		
 		ConnectionConfigFactory configFactory = new ConnectionConfigFactory();
-		configFactory.setAnonymousLoginEnabled(false);
-		configFactory.setMaxAnonymousLogins(0);
+		configFactory.setAnonymousLoginEnabled(true);
+		configFactory.setMaxAnonymousLogins(10);
 		
 		configFactory.setMaxLoginFailures(5);
 		configFactory.setLoginFailureDelay(30);
@@ -102,11 +106,19 @@ public class FTPServer {
 		ListenerFactory factory = new ListenerFactory();	
 		factory.setPort(port);
 		factory.setIdleTimeout(60);
+		DataConnectionConfigurationFactory dataConfigFactory = new DataConnectionConfigurationFactory();
+		dataConfigFactory.setPassivePorts("10000-10100");
+		factory.setDataConnectionConfiguration(dataConfigFactory.createDataConnectionConfiguration());
 
+		CommandFactoryFactory cmdFactoryFactory = new CommandFactoryFactory();
+		cmdFactoryFactory.addCommand("UNZP", new UNZP());
+		cmdFactoryFactory.addCommand("DZPC", new DZPC());
+		
 		FtpServerFactory serverFactory = new FtpServerFactory();
 		serverFactory.addListener("default", factory.createListener());
 		serverFactory.setUserManager(userManager);
 		serverFactory.setConnectionConfig(configFactory.createConnectionConfig());
+		serverFactory.setCommandFactory(cmdFactoryFactory.createCommandFactory());
 
 	    server = serverFactory.createServer();
 	    
